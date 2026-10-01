@@ -20,6 +20,12 @@ material3 = "1.5.0-alpha18"
 # --- KotlinX ---
 coroutines = "1.11.0"
 
+# --- Networking (REST + WebSocket to mihomo's external controller) ---
+okhttp = "4.12.0"
+
+# Compose material icons are frozen at 1.7.x (still API-compatible)
+iconsCore = "1.7.8"
+
 # NOTE: aliases are single-token (camelCase) on purpose. Gradle rejects a catalog alias
 # that is also a dash/dot prefix of another alias (leaf/node accessor clash), so
 # names like `compose-ui` + `compose-ui-tooling` cannot co-exist.
@@ -34,11 +40,14 @@ composeUi = { group = "androidx.compose.ui", name = "ui", version.ref = "compose
 composeUiGraphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "composeUi" }
 composeUiTooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "composeUi" }
 composeUiToolingPreview = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "composeUi" }
+composeAnimation = { group = "androidx.compose.animation", name = "animation", version.ref = "composeUi" }
 composeFoundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "composeUi" }
+composeMaterialIconsCore = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "iconsCore" }
 composeFoundationLayout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "composeUi" }
 composeMaterial3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 kotlinxCoroutinesAndroid = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

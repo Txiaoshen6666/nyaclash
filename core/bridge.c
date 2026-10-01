@@ -162,6 +162,33 @@ Java_com_autumn_nyaclash_core_NativeBridge_nativeLoadConfig(JNIEnv *env, jobject
     return result;
 }
 
+JNIEXPORT jstring JNICALL
+Java_com_autumn_nyaclash_core_NativeBridge_nativePrepareConfig(JNIEnv *env, jobject thiz,
+                                                               jstring profile_path,
+                                                               jstring out_path,
+                                                               jstring controller,
+                                                               jstring secret) {
+    (void) thiz;
+    char *p = dup_utf(env, profile_path);
+    char *o = dup_utf(env, out_path);
+    char *c = dup_utf(env, controller);
+    char *s = dup_utf(env, secret);
+
+    char *err = corePrepareConfig(p, o, c, s);
+
+    free(p);
+    free(o);
+    free(c);
+    free(s);
+
+    if (err == NULL) {
+        return NULL;
+    }
+    jstring result = (*env)->NewStringUTF(env, err);
+    free(err);
+    return result;
+}
+
 JNIEXPORT jint JNICALL
 Java_com_autumn_nyaclash_core_NativeBridge_nativeStartTun(JNIEnv *env, jobject thiz,
                                                           jint fd, jstring stack,

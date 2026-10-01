@@ -16,6 +16,8 @@ import com.autumn.nyaclash.MainActivity
 import com.autumn.nyaclash.R
 import com.autumn.nyaclash.core.NativeBridge
 import com.autumn.nyaclash.core.TunInterface
+import com.autumn.nyaclash.data.ClashApi
+import com.autumn.nyaclash.data.SettingsStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,7 +33,6 @@ class NyaVpnService : VpnService(), TunInterface {
         private const val CHANNEL_ID = "nyaclash.vpn"
         private const val NOTIFICATION_ID = 1
 
-        private const val STACK = "mixed"
         private const val TUN_GATEWAY = "172.19.0.1"
         private const val TUN_GATEWAY_PREFIX = 30
         private const val TUN_GATEWAY6 = "fdfe:dcba:9876::1"
@@ -66,8 +67,8 @@ class NyaVpnService : VpnService(), TunInterface {
             }
 
             else -> {
-                startForeground(NOTIFICATION_ID, buildNotification("Connecting…"))
-                TunnelState.status = "Connecting…"
+                startForeground(NOTIFICATION_ID, buildNotification("连接中…"))
+                TunnelState.status = "连接中…"
                 scope.launch { startTunnel() }
             }
         }
@@ -78,13 +79,15 @@ class NyaVpnService : VpnService(), TunInterface {
         if (tunnel != null) return
 
         val context = applicationContext
-        val config = ProfileStore.activeConfig(context)
-        if (!config.exists()) {
-            fail("No profile imported")
+        ProfileStore.ensureLoaded(context)
+        SettingsStore.ensureLoaded(context)
+
+        if (ProfileStore.activeConfigFile(context) == null) {
+            fail("还没有导入订阅")
             return
         }
         if (!NativeBridge.available) {
-            fail("Native core not bundled")
+            fail("原生内核未打包")
             return
         }
 
@@ -96,17 +99,26 @@ class NyaVpnService : VpnService(), TunInterface {
                 sdkVersion = Build.VERSION.SDK_INT,
             )
 
-            NativeBridge.nativeLoadConfig(config.absolutePath)?.let { error ->
-                fail("Config error: $error")
+            val runtime = RuntimeConfig.prepare(context).getOrElse { error ->
+                fail("配置生成失败: ${error.message}")
                 return
             }
+
+            NativeBridge.nativeLoadConfig(runtime.absolutePath)?.let { error ->
+                fail("配置错误: $error")
+                return
+            }
+
+            ClashApi.configure(SettingsStore.controllerSecret(context))
+
+            val dnsV4 = SettingsStore.dns.ifBlank { TUN_DNS }
 
             val builder = Builder()
                 .setSession("nyaclash")
                 .setMtu(TUN_MTU)
                 .addAddress(TUN_GATEWAY, TUN_GATEWAY_PREFIX)
                 .addRoute("0.0.0.0", 0)
-                .addDnsServer(TUN_DNS)
+                .addDnsServer(dnsV4)
                 .setBlocking(false)
 
             // IPv6 is best-effort: some networks/devices do not support it.
@@ -131,22 +143,22 @@ class NyaVpnService : VpnService(), TunInterface {
 
             val rc = NativeBridge.nativeStartTun(
                 fd = pfd.detachFd(),
-                stack = STACK,
+                stack = SettingsStore.tunStack,
                 gateway = "$TUN_GATEWAY/$TUN_GATEWAY_PREFIX,$TUN_GATEWAY6/$TUN_GATEWAY6_PREFIX",
                 portal = "",
-                dns = "$TUN_DNS,$TUN_DNS6",
+                dns = "$dnsV4,$TUN_DNS6",
                 callback = this,
             )
             if (rc != 0) {
                 pfd.close()
-                fail("startTun failed (rc=$rc)")
+                fail("启动 TUN 失败 (rc=$rc)")
                 return
             }
 
             tunnel = pfd
             TunnelState.running = true
-            TunnelState.status = "Connected"
-            updateNotification("Connected")
+            TunnelState.status = "已连接"
+            updateNotification("已连接")
         } catch (e: Exception) {
             fail(e.message ?: e.javaClass.simpleName)
         }
@@ -159,7 +171,7 @@ class NyaVpnService : VpnService(), TunInterface {
         runCatching { tunnel?.close() }
         tunnel = null
         TunnelState.running = false
-        TunnelState.status = "Disconnected"
+        TunnelState.status = "未连接"
     }
 
     private fun fail(message: String) {
@@ -186,7 +198,7 @@ class NyaVpnService : VpnService(), TunInterface {
         runCatching { tunnel?.close() }
         tunnel = null
         TunnelState.running = false
-        if (TunnelState.status == "Connected") TunnelState.status = "Disconnected"
+        if (TunnelState.status == "已连接") TunnelState.status = "未连接"
         scope.cancel()
         super.onDestroy()
     }
@@ -219,7 +231,7 @@ class NyaVpnService : VpnService(), TunInterface {
             .setContentText(text)
             .setOngoing(true)
             .setContentIntent(contentIntent)
-            .addAction(0, "Stop", stopIntent)
+            .addAction(0, "断开", stopIntent)
             .build()
     }
 

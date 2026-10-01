@@ -215,17 +215,23 @@ JNI 的 `bridge.c` 与 Go 源码在**同一个 package 目录**，由 cgo 一起
       - `:app` Compose Material 3 Expressive 骨架（主题 + 首页）
       - `.github/workflows/ci.yml`（编 Debug APK 并上传 artifact，零 Secrets）
       - `LICENSE`(GPL-3.0) / `NOTICE` / `README.md` / `.gitignore`
-- [ ] 里程碑 2：Go 内核（`libclash.so` + JNI）
-      - [x] 2a 工具链冒烟：Go module + `coreVersion`/`coreInit` + JNI 桥 + CI 交叉编译 + 加载（待 CI 验证）
-      - [ ] 2b 完整包装：dialer/process 钩子、配置加载、`startTun(fd)`/`stopTun`
-- [x] 里程碑 3：VPN 打通（代码已就绪，待 CI 验证）
+- [x] 里程碑 2：Go 内核（`libclash.so` + JNI）✅ **CI 全绿**
+      - 2a 工具链冒烟：Go module + `coreVersion`/`coreInit` + JNI 桥 + CI 交叉编译 + 加载
+      - 2b 完整包装：`dialer.DefaultSocketHook`(protect)、配置加载、`startTun(fd)`/`stopTun`
+- [x] 里程碑 3：VPN 打通 ✅ **真机测试通过（能连接）**
       - `NyaVpnService`（VpnService + 前台通知 + `TunInterface` 回调）
-      - VPN 参数：172.19.0.1/30、fdfe:dcba:9876::1/126、DNS 172.19.0.2、MTU 9000、stack=mixed
-      - `ProfileStore`：订阅 URL 下载 / base64 兜底 → `filesDir/profiles/active.yaml`
-      - 首页：导入订阅 + Connect/Disconnect（含 VPN 授权流程、通知权限）
-      - 说明：本版**不做配置覆盖**（直接用订阅 YAML）；external-controller 等到里程碑 4
-- [ ] 里程碑 4：数据层（REST/WebSocket）
-- [ ] 里程碑 5：UI（首页/节点/订阅/日志/设置）
+      - VPN 参数：172.19.0.1/30、fdfe:dcba:9876::1/126、DNS、MTU 9000
+      - 用户实测：导入订阅 → Connect → 可正常代理
+- [ ] 里程碑 4：数据层（REST/WebSocket）— 与 5 一起提交，待 CI
+      - Go 新增 `corePrepareConfig`（用 mihomo `common/yaml` 注入 `external-controller` + `secret`）
+      - `RuntimeConfig` 生成 `runtime.yaml`；`ClashApi`（OkHttp）访问 `/traffic` `/proxies` `/configs`
+      - `SettingsStore`（动态取色 / 深色模式 / TUN 栈 / DNS）
+- [ ] 里程碑 5：三页 UI（仪表板 / 订阅 / 设置）+ 淡入淡出动画
+      - `NyaClashApp`：Scaffold + NavigationBar + `AnimatedContent`(fadeIn/fadeOut)
+      - 仪表板：连接开关、实时上下行、模式切换、代理组/节点/延迟
+      - 订阅：多订阅列表、添加/切换/更新/删除、流量与到期
+      - 设置：外观 / 网络 / 关于
+      - 说明：**不引入** navigation-compose 与 YAML 库（避免 compileSdk 37 风险）
 - [ ] 里程碑 6：发布（签名 Secrets + `release.yml`）
 
 ### 本地 / GitHub 环境（已就绪）

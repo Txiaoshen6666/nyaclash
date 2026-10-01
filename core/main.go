@@ -65,6 +65,23 @@ func coreLoadConfig(path *C.char) *C.char {
 	return nil
 }
 
+// corePrepareConfig writes a runtime config with the external controller
+// injected. Returns NULL on success or a newly allocated error string.
+//
+//export corePrepareConfig
+func corePrepareConfig(profilePath, outPath, controller, secret *C.char) *C.char {
+	err := prepareConfig(
+		C.GoString(profilePath),
+		C.GoString(outPath),
+		C.GoString(controller),
+		C.GoString(secret),
+	)
+	if err != nil {
+		return C.CString(err.Error())
+	}
+	return nil
+}
+
 // coreStartTun starts the TUN listener on the given file descriptor.
 // Returns 0 on success, -1 on failure.
 //

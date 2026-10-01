@@ -93,11 +93,14 @@ dependencies {
     implementation(libs.composeUi)
     implementation(libs.composeUiGraphics)
     implementation(libs.composeUiToolingPreview)
+    implementation(libs.composeAnimation)
     implementation(libs.composeFoundation)
     implementation(libs.composeFoundationLayout)
     implementation(libs.composeMaterial3)
+    implementation(libs.composeMaterialIconsCore)
 
     implementation(libs.kotlinxCoroutinesAndroid)
+    implementation(libs.okhttp)
 
     debugImplementation(libs.composeUiTooling)
 }

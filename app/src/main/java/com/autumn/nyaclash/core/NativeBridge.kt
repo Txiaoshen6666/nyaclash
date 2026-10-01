@@ -63,6 +63,17 @@ object NativeBridge {
     /** Loads a mihomo YAML config. Returns null on success, else an error message. */
     external fun nativeLoadConfig(path: String): String?
 
+    /**
+     * Writes a runtime copy of the profile with `external-controller`/`secret`
+     * injected. Returns null on success, else an error message.
+     */
+    external fun nativePrepareConfig(
+        profilePath: String,
+        outPath: String,
+        controller: String,
+        secret: String,
+    ): String?
+
     /** Starts TUN on [fd]. Returns 0 on success, -1 on failure. */
     external fun nativeStartTun(
         fd: Int,
