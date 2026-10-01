@@ -11,6 +11,9 @@ package main
 import "C"
 
 import (
+	"runtime"
+	"runtime/debug"
+
 	"github.com/metacubex/mihomo/constant"
 )
 
@@ -23,9 +26,66 @@ func coreVersion() *C.char {
 	return C.CString(constant.Version)
 }
 
-// coreInit sets the working directory used by mihomo (profiles, geo data, ...).
+// coreInit configures the core and applies the default configuration.
 //
 //export coreInit
-func coreInit(home *C.char) {
-	constant.SetHomeDir(C.GoString(home))
+func coreInit(home, versionName, gitVersion *C.char, sdkVersion C.int) {
+	initDelegate(C.GoString(home), C.GoString(versionName), C.GoString(gitVersion), int(sdkVersion))
+	loadDefaultConfig()
+}
+
+// coreReset tears the tunnel down and reloads the defaults.
+//
+//export coreReset
+func coreReset() {
+	stopTunInternal()
+	loadDefaultConfig()
+	runtime.GC()
+	debug.FreeOSMemory()
+}
+
+// coreForceGc requests a garbage collection without blocking the caller.
+//
+//export coreForceGc
+func coreForceGc() {
+	go func() {
+		runtime.GC()
+		debug.FreeOSMemory()
+	}()
+}
+
+// coreLoadConfig loads a mihomo YAML file. It returns NULL on success or a
+// newly allocated error string (must be freed by the caller) on failure.
+//
+//export coreLoadConfig
+func coreLoadConfig(path *C.char) *C.char {
+	if err := loadConfig(C.GoString(path)); err != nil {
+		return C.CString(err.Error())
+	}
+	return nil
+}
+
+// coreStartTun starts the TUN listener on the given file descriptor.
+// Returns 0 on success, -1 on failure.
+//
+//export coreStartTun
+func coreStartTun(fd C.int, stack, gateway, portal, dns *C.char) C.int {
+	err := startTunInternal(
+		int(fd),
+		C.GoString(stack),
+		C.GoString(gateway),
+		C.GoString(portal),
+		C.GoString(dns),
+	)
+	if err != nil {
+		return -1
+	}
+	return 0
+}
+
+// coreStopTun stops the TUN listener.
+//
+//export coreStopTun
+func coreStopTun() {
+	stopTunInternal()
 }

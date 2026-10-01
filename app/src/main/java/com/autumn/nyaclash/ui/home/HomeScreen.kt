@@ -1,5 +1,6 @@
 package com.autumn.nyaclash.ui.home
 
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.autumn.nyaclash.BuildConfig
 import com.autumn.nyaclash.core.NativeBridge
 import com.autumn.nyaclash.ui.theme.NyaClashTheme
 
@@ -27,7 +29,12 @@ private fun rememberCoreStatus(): String {
             "not bundled (built in CI)"
         } else {
             runCatching {
-                NativeBridge.nativeInit(context.filesDir.absolutePath)
+                NativeBridge.ensureInit(
+                    homeDir = context.filesDir.absolutePath,
+                    versionName = BuildConfig.VERSION_NAME,
+                    gitVersion = "",
+                    sdkVersion = Build.VERSION.SDK_INT,
+                )
                 "mihomo ${NativeBridge.nativeVersion()}"
             }.getOrElse { error ->
                 "error: ${error.message ?: error.javaClass.simpleName}"
