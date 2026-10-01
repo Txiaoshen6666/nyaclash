@@ -1,0 +1,44 @@
+[versions]
+# --- Build toolchain (see agent.md for why these are pinned) ---
+agp = "8.13.2"
+kotlin = "2.2.20"
+
+# --- AndroidX ---
+coreKtx = "1.18.0"
+lifecycle = "2.11.0"
+activityCompose = "1.12.4"
+
+# --- Compose ---
+# compose-ui 1.11.4: minCompileSdk=35, minAGP=8.6.0  (works with AGP 8.13 / compileSdk 36)
+composeUi = "1.11.4"
+# material3 1.5.0-alpha18: newest release exposing PUBLIC Material 3 Expressive APIs
+# while still requiring only compileSdk 35 / AGP 8.6.0 (alpha19+ jumps to compileSdk 37 / AGP 9.1).
+material3 = "1.5.0-alpha18"
+
+# --- KotlinX ---
+coroutines = "1.11.0"
+
+# NOTE: aliases are single-token (camelCase) on purpose. Gradle rejects a catalog alias
+# that is also a dash/dot prefix of another alias (leaf/node accessor clash), so
+# names like `compose-ui` + `compose-ui-tooling` cannot co-exist.
+[libraries]
+androidxCoreKtx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidxLifecycleRuntimeKtx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidxLifecycleViewmodelCompose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidxActivityCompose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+
+composeRuntime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "composeUi" }
+composeUi = { group = "androidx.compose.ui", name = "ui", version.ref = "composeUi" }
+composeUiGraphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "composeUi" }
+composeUiTooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "composeUi" }
+composeUiToolingPreview = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "composeUi" }
+composeFoundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "composeUi" }
+composeFoundationLayout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "composeUi" }
+composeMaterial3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+
+kotlinxCoroutinesAndroid = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlinCompose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
