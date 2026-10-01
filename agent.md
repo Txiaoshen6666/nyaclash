@@ -218,7 +218,12 @@ JNI 的 `bridge.c` 与 Go 源码在**同一个 package 目录**，由 cgo 一起
 - [ ] 里程碑 2：Go 内核（`libclash.so` + JNI）
       - [x] 2a 工具链冒烟：Go module + `coreVersion`/`coreInit` + JNI 桥 + CI 交叉编译 + 加载（待 CI 验证）
       - [ ] 2b 完整包装：dialer/process 钩子、配置加载、`startTun(fd)`/`stopTun`
-- [ ] 里程碑 3：VPN 打通（VpnService + startTun(fd) + protect 回调）
+- [x] 里程碑 3：VPN 打通（代码已就绪，待 CI 验证）
+      - `NyaVpnService`（VpnService + 前台通知 + `TunInterface` 回调）
+      - VPN 参数：172.19.0.1/30、fdfe:dcba:9876::1/126、DNS 172.19.0.2、MTU 9000、stack=mixed
+      - `ProfileStore`：订阅 URL 下载 / base64 兜底 → `filesDir/profiles/active.yaml`
+      - 首页：导入订阅 + Connect/Disconnect（含 VPN 授权流程、通知权限）
+      - 说明：本版**不做配置覆盖**（直接用订阅 YAML）；external-controller 等到里程碑 4
 - [ ] 里程碑 4：数据层（REST/WebSocket）
 - [ ] 里程碑 5：UI（首页/节点/订阅/日志/设置）
 - [ ] 里程碑 6：发布（签名 Secrets + `release.yml`）
