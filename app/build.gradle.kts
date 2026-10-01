@@ -36,6 +36,7 @@ android {
             }
             create("release") {
                 storeFile = rootProject.file(keystoreProperties.getProperty("storeFile") ?: "release.keystore")
+                storeType = keystoreProperties.getProperty("storeType") ?: "PKCS12"
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")

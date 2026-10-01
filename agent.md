@@ -235,7 +235,11 @@ JNI 的 `bridge.c` 与 Go 源码在**同一个 package 目录**，由 cgo 一起
       - 设置：外观 / 网络 / 关于
       - 说明：**不引入** navigation-compose 与 YAML 库；节点图标为自绘 ImageVector
         （避免引入体积巨大的 material-icons-extended）
-- [ ] 里程碑 6：发布（签名 Secrets + `release.yml`）
+- [x] 里程碑 6：发布（签名 Secrets + `release.yml`）
+      - 签名 keystore：`~/nyaclash-signing/release.p12`（PKCS12，alias `nyaclash`）——**仓库外，务必备份**
+      - Secrets：`KEYSTORE_BASE64` / `KEYSTORE_PASSWORD` / `KEY_ALIAS` / `KEY_PASSWORD`
+      - `.github/workflows/release.yml`：推 `v*` tag 或手动 → 编签名 Release APK → 发布 GitHub Release
+      - 注意：release 包名 `com.autumn.nyaclash`（debug 是 `com.autumn.nyaclash.debug`），二者可共存
 
 ### 本地 / GitHub 环境（已就绪）
 
