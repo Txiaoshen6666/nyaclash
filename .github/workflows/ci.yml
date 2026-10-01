@@ -13,6 +13,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NDK_VERSION: r28c
+  GO_VERSION: 1.26
+
 jobs:
   build-debug:
     name: Build debug APK
@@ -35,6 +39,38 @@ jobs:
 
       - name: Install Android SDK packages
         run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: core/go.mod
+
+      - name: Set up Android NDK
+        id: ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: ${{ env.NDK_VERSION }}
+          add-to-path: false
+
+      - name: Build mihomo core (arm64-v8a -> libclash.so)
+        env:
+          NDK: ${{ steps.ndk.outputs.ndk-path }}
+        run: |
+          set -euo pipefail
+          OUT="$GITHUB_WORKSPACE/app/src/main/jniLibs/arm64-v8a"
+          mkdir -p "$OUT"
+
+          CC="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+          test -x "$CC" || { echo "NDK clang not found at $CC" >&2; exit 1; }
+
+          cd core
+          go mod tidy
+          CGO_ENABLED=1 GOOS=android GOARCH=arm64 CC="$CC" \
+            go build -buildmode=c-shared -tags "with_gvisor" -trimpath \
+            -ldflags "-s -w" -o "$OUT/libclash.so" .
+          ls -l "$OUT"
 
       - name: Build debug APK
         run: ./gradlew --no-daemon --stacktrace :app:assembleDebug

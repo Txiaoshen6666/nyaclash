@@ -11,13 +11,35 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.autumn.nyaclash.core.NativeBridge
 import com.autumn.nyaclash.ui.theme.NyaClashTheme
 
 @Composable
+private fun rememberCoreStatus(): String {
+    val context = LocalContext.current
+    return remember {
+        if (!NativeBridge.available) {
+            "not bundled (built in CI)"
+        } else {
+            runCatching {
+                NativeBridge.nativeInit(context.filesDir.absolutePath)
+                "mihomo ${NativeBridge.nativeVersion()}"
+            }.getOrElse { error ->
+                "error: ${error.message ?: error.javaClass.simpleName}"
+            }
+        }
+    }
+}
+
+@Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
+    val coreStatus = rememberCoreStatus()
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -44,8 +66,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    text = "Milestone 1: UI skeleton. The mihomo core, VPN service and " +
-                        "REST data layer arrive in later milestones.",
+                    text = "Core: $coreStatus",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

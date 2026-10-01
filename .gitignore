@@ -3,6 +3,11 @@
 build/
 !gradle/wrapper/gradle-wrapper.jar
 
+# Native core build output (produced in CI by the Go/NDK step)
+app/src/main/jniLibs/
+core/libclash.so
+core/libclash.h
+
 # Android
 local.properties
 *.apk

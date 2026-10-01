@@ -117,26 +117,48 @@
   `sing_tun.New(listenerconfig.Tun{FileDescriptor: fd, ...}, tunnel.Tunnel)`、
   `dialer.DefaultSocketHook`、`process.DefaultPackageNameResolver`。
 
-## 7. 计划目录结构
+## 7. 实际目录结构
+
+> 与最初的 `:core` 模块方案相比，简化为**单一 `:app` 模块**：Go/JNI 源码放在顶层
+> `core/`，CI 编出的 `libclash.so` 直接落到 `app/src/main/jniLibs/arm64-v8a/`
+> （该目录不入库，见 `.gitignore`）。这样避免引入 CMake / 自定义 Gradle 插件，
+> 首次跑通更稳。
 
 ```
 nyaclash/
 ├── .github/workflows/
-│   ├── ci.yml          # push/PR: 编 Debug APK(自带 debug keystore) + 上传 artifact
-│   └── release.yml     # 打 tag / 手动: 用 Secrets 签名 Release APK + 建 Release
+│   └── ci.yml          # Go+NDK 编 libclash.so → 编 Debug APK → 上传 artifact
+│                       # (release.yml 在里程碑 6 添加)
 ├── gradle/ (wrapper + libs.versions.toml)
 ├── gradlew, settings.gradle.kts, build.gradle.kts, gradle.properties
-├── app/                # Compose UI + VpnService + 数据层
-│   └── src/main/{java,res,AndroidManifest.xml}
-├── core/               # 内核封装
-│   ├── src/main/golang/  # mihomo 包装(替代 CMFA 的 cfa/native)
-│   ├── src/main/cpp/     # JNI 桥(最小)
-│   └── src/main/java/com/autumn/nyaclash/core/   # Kotlin 门面 Core.kt
+├── app/                # 唯一模块：Compose UI + (后续) VpnService + 数据层
+│   └── src/main/{java,res,AndroidManifest.xml,jniLibs}
+│       └── java/com/autumn/nyaclash/
+│           ├── MainActivity.kt
+│           ├── core/NativeBridge.kt     # JNI 门面 (System.loadLibrary("clash"))
+│           └── ui/{home,theme}
+├── core/               # 原生内核（Go module，非 Gradle 模块）
+│   ├── go.mod          # module nyaclash/core, require mihomo v1.19.32
+│   ├── main.go         # package main, cgo //export coreVersion/coreInit...
+│   └── bridge.c        # JNI_OnLoad + Java_..._nativeXxx（与 Go 同编进 libclash.so）
 ├── README.md
 ├── LICENSE (GPL-3.0)
 ├── NOTICE
 └── .gitignore
 ```
+
+### 单 so 方案
+
+JNI 的 `bridge.c` 与 Go 源码在**同一个 package 目录**，由 cgo 一起编译，
+因此只产出一个 `libclash.so`：
+
+- Kotlin `System.loadLibrary("clash")` 直接加载；
+- `bridge.c` 里 `JNIEXPORT` 的函数自动导出，JNI 按名查找
+  `Java_com_autumn_nyaclash_core_NativeBridge_nativeXxx`；
+- `bridge.c` 通过 cgo 生成的 `_cgo_export.h` 调用 Go 的 `//export` 函数；
+- Go → Kotlin 的回调（后续 protect/uid）也将在 `bridge.c` 里用缓存的 JavaVM 实现。
+
+> 注意：`_cgo_export.h` 由 cgo 生成，`bridge.c` 用 `#include "_cgo_export.h"` 引用。
 
 ## 8. 首版功能范围（最小可用集）
 
@@ -194,6 +216,8 @@ nyaclash/
       - `.github/workflows/ci.yml`（编 Debug APK 并上传 artifact，零 Secrets）
       - `LICENSE`(GPL-3.0) / `NOTICE` / `README.md` / `.gitignore`
 - [ ] 里程碑 2：Go 内核（`libclash.so` + JNI）
+      - [x] 2a 工具链冒烟：Go module + `coreVersion`/`coreInit` + JNI 桥 + CI 交叉编译 + 加载（待 CI 验证）
+      - [ ] 2b 完整包装：dialer/process 钩子、配置加载、`startTun(fd)`/`stopTun`
 - [ ] 里程碑 3：VPN 打通（VpnService + startTun(fd) + protect 回调）
 - [ ] 里程碑 4：数据层（REST/WebSocket）
 - [ ] 里程碑 5：UI（首页/节点/订阅/日志/设置）
