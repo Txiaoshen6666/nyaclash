@@ -186,7 +186,9 @@ nyaclash/
 - [x] 环境勘查与技术调研
 - [x] 方案定稿、决策锁定
 - [x] 创建项目目录 `nyaclash/` 并写入本文件
-- [x] 里程碑 1：骨架 + CI（代码已就绪，**待首次 CI 验证**）
+- [x] 里程碑 1：骨架 + CI ✅ **CI 全绿**
+      - run: https://github.com/Txiaoshen6666/nyaclash/actions/runs/36814971974
+      - 产物：`nyaclash-debug`（约 11.8 MB，debug keystore 签名）
       - Gradle 工程（settings/build/gradle.properties/version catalog/wrapper 8.14.5）
       - `:app` Compose Material 3 Expressive 骨架（主题 + 首页）
       - `.github/workflows/ci.yml`（编 Debug APK 并上传 artifact，零 Secrets）
