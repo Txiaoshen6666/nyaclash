@@ -5,7 +5,9 @@ kotlin = "2.2.20"
 
 # --- AndroidX ---
 coreKtx = "1.18.0"
-lifecycle = "2.11.0"
+# lifecycle 2.11.0's *-compose artifacts require compileSdk 37 + AGP 9.1;
+# 2.10.0 is the newest that stays at minCompileSdk=35 / minAGP=8.6.0.
+lifecycle = "2.10.0"
 activityCompose = "1.12.4"
 
 # --- Compose ---

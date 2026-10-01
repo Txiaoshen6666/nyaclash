@@ -58,7 +58,7 @@
 | compose-ui | 1.11.4 | minCompileSdk=35 / minAGP=8.6.0 |
 | core-ktx | 1.18.0 | 1.19.x 起要求 compileSdk 37 & AGP 9.1 |
 | activity-compose | 1.12.4 | minCompileSdk=36 / minAGP=8.9.1 |
-| lifecycle | 2.11.0 | minCompileSdk=34 |
+| lifecycle | 2.10.0 | 2.11.0 的 `*-compose` 要求 compileSdk 37 & AGP 9.1；2.10.0 是 minCompileSdk=35 的上限 |
 | kotlinx-coroutines | 1.11.0 | |
 | compileSdk / targetSdk | 36 | |
 | minSdk | 24 | |
@@ -197,10 +197,17 @@ nyaclash/
 - [ ] 里程碑 5：UI（首页/节点/订阅/日志/设置）
 - [ ] 里程碑 6：发布（签名 Secrets + `release.yml`）
 
+### 本地 / GitHub 环境（已就绪）
+
+- GitHub 账户：`Txiaoshen6666`
+- 仓库：https://github.com/Txiaoshen6666/nyaclash （Public）
+- git 身份：`Txiaoshen6666 <Txiaoshen6666@users.noreply.github.com>`
+- SSH：`~/.ssh/id_ed25519_github`（已加入 GitHub），`~/.ssh/config` 固定 `github.com` 用该密钥
+- `gh` 2.102.0 已安装并登录（git protocol = ssh，scopes: gist / read:org / repo）
+- remote：`origin = git@github.com:Txiaoshen6666/nyaclash.git`
+- 首次提交：`98d4660`（main，已推送）
+
 ### 待用户确认后才执行的动作
 
-- [ ] `git init` / 首次 `git commit`（本地可做，但推送前需确认）
-- [ ] 创建 GitHub 仓库 `nyaclash`（Public）
-- [ ] `git push`
 - [ ] 配置 Secrets（发布里程碑）
-- [ ] 启用 / 触发 Actions
+- [ ] 启用 / 触发 Actions（已随 push 自动触发）
