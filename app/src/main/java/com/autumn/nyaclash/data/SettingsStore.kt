@@ -8,6 +8,10 @@ import java.security.SecureRandom
 
 enum class DarkMode { System, Light, Dark }
 
+enum class NodeSort { Default, Name, Latency }
+
+enum class NodeLayout { List, Grid }
+
 /** Persisted user settings, exposed as Compose state. */
 object SettingsStore {
     private const val PREFS = "nyaclash.settings"
@@ -16,11 +20,15 @@ object SettingsStore {
     private const val KEY_STACK = "tun_stack"
     private const val KEY_DNS = "tun_dns"
     private const val KEY_SECRET = "controller_secret"
+    private const val KEY_NODE_SORT = "node_sort"
+    private const val KEY_NODE_LAYOUT = "node_layout"
 
     var dynamicColor by mutableStateOf(true)
     var darkMode by mutableStateOf(DarkMode.System)
     var tunStack by mutableStateOf("mixed")
     var dns by mutableStateOf("172.19.0.2")
+    var nodeSort by mutableStateOf(NodeSort.Default)
+    var nodeLayout by mutableStateOf(NodeLayout.List)
 
     private var loaded = false
 
@@ -33,6 +41,12 @@ object SettingsStore {
         }.getOrDefault(DarkMode.System)
         tunStack = prefs.getString(KEY_STACK, "mixed") ?: "mixed"
         dns = prefs.getString(KEY_DNS, "172.19.0.2") ?: "172.19.0.2"
+        nodeSort = runCatching {
+            NodeSort.valueOf(prefs.getString(KEY_NODE_SORT, NodeSort.Default.name)!!)
+        }.getOrDefault(NodeSort.Default)
+        nodeLayout = runCatching {
+            NodeLayout.valueOf(prefs.getString(KEY_NODE_LAYOUT, NodeLayout.List.name)!!)
+        }.getOrDefault(NodeLayout.List)
         loaded = true
     }
 
@@ -54,6 +68,16 @@ object SettingsStore {
     fun setDns(context: Context, value: String) {
         dns = value
         prefs(context).edit().putString(KEY_DNS, value).apply()
+    }
+
+    fun setNodeSort(context: Context, value: NodeSort) {
+        nodeSort = value
+        prefs(context).edit().putString(KEY_NODE_SORT, value.name).apply()
+    }
+
+    fun setNodeLayout(context: Context, value: NodeLayout) {
+        nodeLayout = value
+        prefs(context).edit().putString(KEY_NODE_LAYOUT, value.name).apply()
     }
 
     /** Stable random secret for mihomo's external controller. */

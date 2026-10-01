@@ -4,8 +4,6 @@ import android.app.Activity
 import android.net.VpnService
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -31,30 +28,25 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.autumn.nyaclash.data.ClashApi
-import com.autumn.nyaclash.data.ProxyGroup
 import com.autumn.nyaclash.data.Traffic
 import com.autumn.nyaclash.service.NyaVpnService
 import com.autumn.nyaclash.service.ProfileStore
 import com.autumn.nyaclash.service.TunnelState
 import com.autumn.nyaclash.ui.formatSpeed
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,10 +58,6 @@ fun DashboardScreen(modifier: Modifier = Modifier) {
     var message by remember { mutableStateOf<String?>(null) }
     var traffic by remember { mutableStateOf(Traffic(0, 0)) }
     var mode by remember { mutableStateOf("rule") }
-    var groups by remember { mutableStateOf<List<ProxyGroup>>(emptyList()) }
-    var loadingGroups by remember { mutableStateOf(false) }
-    val latency = remember { mutableStateMapOf<String, Int>() }
-    var expanded by remember { mutableStateOf<String?>(null) }
 
     val vpnLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
@@ -90,15 +78,9 @@ fun DashboardScreen(modifier: Modifier = Modifier) {
     }
 
     LaunchedEffect(TunnelState.running) {
-        if (!TunnelState.running) {
-            groups = emptyList()
-            return@LaunchedEffect
+        if (TunnelState.running) {
+            runCatching { mode = ClashApi.mode() }
         }
-        runCatching { mode = ClashApi.mode() }
-        loadingGroups = true
-        runCatching { groups = ClashApi.groups() }
-            .onFailure { message = "读取节点失败: ${it.message}" }
-        loadingGroups = false
     }
 
     val activeProfile = ProfileStore.profiles.firstOrNull { it.id == ProfileStore.activeId }
@@ -108,9 +90,7 @@ fun DashboardScreen(modifier: Modifier = Modifier) {
         contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item {
-            Text("仪表板", style = MaterialTheme.typography.headlineMedium)
-        }
+        item { Text("仪表板", style = MaterialTheme.typography.headlineMedium) }
 
         item {
             ConnectionCard(
@@ -138,13 +118,15 @@ fun DashboardScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        item {
-            TrafficCard(up = traffic.up, down = traffic.down)
-        }
+        item { TrafficCard(up = traffic.up, down = traffic.down) }
 
         item {
             Column {
-                SectionTitle("代理模式")
+                Text(
+                    text = "代理模式",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
                 Spacer(Modifier.height(8.dp))
                 val modes = listOf("rule" to "规则", "global" to "全局", "direct" to "直连")
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -166,79 +148,19 @@ fun DashboardScreen(modifier: Modifier = Modifier) {
         }
 
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SectionTitle("代理组")
-                TextButton(
-                    enabled = TunnelState.running && !loadingGroups,
-                    onClick = {
-                        scope.launch {
-                            loadingGroups = true
-                            runCatching { groups = ClashApi.groups() }
-                                .onFailure { message = "读取节点失败: ${it.message}" }
-                            loadingGroups = false
-                        }
+            Card(Modifier.fillMaxWidth()) {
+                Text(
+                    text = if (TunnelState.running) {
+                        "底部「节点」页可查看代理组、切换节点、测速与连通性。"
+                    } else {
+                        "连接后底部会出现「节点」页。先到「订阅」导入订阅。"
                     },
-                ) { Text(if (loadingGroups) "刷新中…" else "刷新") }
-            }
-        }
-
-        if (!TunnelState.running) {
-            item {
-                HintCard("连接后这里会显示代理组和节点，可切换节点、测延迟。")
-            }
-        } else if (groups.isEmpty() && !loadingGroups) {
-            item { HintCard("没有代理组（订阅里可能没有 proxy-groups）。") }
-        } else {
-            items(groups, key = { it.name }) { group ->
-                GroupCard(
-                    group = group,
-                    expanded = expanded == group.name,
-                    latency = latency,
-                    onToggleExpand = {
-                        expanded = if (expanded == group.name) null else group.name
-                    },
-                    onSelect = { name ->
-                        scope.launch {
-                            runCatching { ClashApi.select(group.name, name) }
-                                .onFailure { message = "切换失败: ${it.message}" }
-                            runCatching { groups = ClashApi.groups() }
-                        }
-                    },
-                    onTest = {
-                        scope.launch {
-                            coroutineScope {
-                                group.all.map { name ->
-                                    async { latency[name] = ClashApi.delay(name) }
-                                }.awaitAll()
-                            }
-                        }
-                    },
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
-
-        item { Spacer(Modifier.height(24.dp)) }
-    }
-}
-
-@Composable
-private fun SectionTitle(text: String) {
-    Text(text = text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-}
-
-@Composable
-private fun HintCard(text: String) {
-    Card(Modifier.fillMaxWidth()) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(16.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -278,10 +200,7 @@ private fun ConnectionCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Button(
-                onClick = onToggle,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            Button(onClick = onToggle, modifier = Modifier.fillMaxWidth()) {
                 Text(if (running) "断开" else "连接")
             }
         }
@@ -304,11 +223,7 @@ private fun TrafficCard(up: Long, down: Long) {
 }
 
 @Composable
-private fun TrafficColumn(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    value: Long,
-) {
+private fun TrafficColumn(icon: ImageVector, label: String, value: Long) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, contentDescription = label, modifier = Modifier.size(18.dp))
@@ -323,79 +238,3 @@ private fun TrafficColumn(
         )
     }
 }
-
-@Composable
-private fun GroupCard(
-    group: ProxyGroup,
-    expanded: Boolean,
-    latency: Map<String, Int>,
-    onToggleExpand: () -> Unit,
-    onSelect: (String) -> Unit,
-    onTest: () -> Unit,
-) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onToggleExpand() },
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(group.name, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        text = "当前: ${group.now.ifBlank { "—" }}  ·  ${group.type}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Icon(
-                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                    contentDescription = null,
-                )
-            }
-
-            AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.padding(top = 8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        TextButton(onClick = onTest) { Text("测延迟") }
-                    }
-                    for (name in group.all) {
-                        val selected = name == group.now
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onSelect(name) }
-                                .padding(vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = name,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                            )
-                            val ms = latency[name]
-                            if (ms != null) {
-                                Text(
-                                    text = if (ms < 0) "超时" else "$ms ms",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-

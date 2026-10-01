@@ -226,12 +226,15 @@ JNI 的 `bridge.c` 与 Go 源码在**同一个 package 目录**，由 cgo 一起
       - Go 新增 `corePrepareConfig`（用 mihomo `common/yaml` 注入 `external-controller` + `secret`）
       - `RuntimeConfig` 生成 `runtime.yaml`；`ClashApi`（OkHttp）访问 `/traffic` `/proxies` `/configs`
       - `SettingsStore`（动态取色 / 深色模式 / TUN 栈 / DNS）
-- [ ] 里程碑 5：三页 UI（仪表板 / 订阅 / 设置）+ 淡入淡出动画
+- [ ] 里程碑 5：UI（仪表板 / 节点 / 订阅 / 设置）+ 淡入淡出动画
       - `NyaClashApp`：Scaffold + NavigationBar + `AnimatedContent`(fadeIn/fadeOut)
-      - 仪表板：连接开关、实时上下行、模式切换、代理组/节点/延迟
+      - **节点页只在连接后出现**（`tabs` 依赖 `TunnelState.running`，按名称选中避免索引错位）
+      - 节点页：测速(延迟)/连通性(独立 URL)、排序(默认/名称/延迟)、显示方式(列表/网格)
+      - 仪表板：连接开关、实时上下行、模式切换（节点已移出）
       - 订阅：多订阅列表、添加/切换/更新/删除、流量与到期
       - 设置：外观 / 网络 / 关于
-      - 说明：**不引入** navigation-compose 与 YAML 库（避免 compileSdk 37 风险）
+      - 说明：**不引入** navigation-compose 与 YAML 库；节点图标为自绘 ImageVector
+        （避免引入体积巨大的 material-icons-extended）
 - [ ] 里程碑 6：发布（签名 Secrets + `release.yml`）
 
 ### 本地 / GitHub 环境（已就绪）

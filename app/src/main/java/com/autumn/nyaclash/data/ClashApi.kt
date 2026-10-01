@@ -28,6 +28,12 @@ data class ProxyGroup(
 object ClashApi {
     private const val BASE = "http://127.0.0.1:9090"
 
+    /** 204 endpoint used for latency ("测速"). */
+    const val LATENCY_URL = "http://www.gstatic.com/generate_204"
+
+    /** Different endpoint used for the connectivity check ("连通性"). */
+    const val CONNECTIVITY_URL = "https://cp.cloudflare.com/generate_204"
+
     @Volatile
     private var secret: String = ""
 
@@ -99,8 +105,7 @@ object ClashApi {
     }
 
     /** Returns the latency in ms, or -1 on failure. */
-    suspend fun delay(name: String): Int = withContext(Dispatchers.IO) {
-        val url = "http://www.gstatic.com/generate_204"
+    suspend fun delay(name: String, url: String = LATENCY_URL): Int = withContext(Dispatchers.IO) {
         val path = "/proxies/${encode(name)}/delay?timeout=5000&url=${encode(url)}"
         http.newCall(request(path).get().build()).execute().use { response ->
             if (!response.isSuccessful) return@use -1
@@ -108,6 +113,9 @@ object ClashApi {
             runCatching { JSONObject(body).optInt("delay", -1) }.getOrDefault(-1)
         }
     }
+
+    /** True when the node can actually carry traffic. */
+    suspend fun connectivity(name: String): Boolean = delay(name, CONNECTIVITY_URL) >= 0
 
     /** Streams `/traffic` (one JSON object per message). */
     fun traffic(): Flow<Traffic> = callbackFlow {
