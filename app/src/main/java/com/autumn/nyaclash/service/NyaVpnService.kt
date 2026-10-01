@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
@@ -17,6 +18,7 @@ import com.autumn.nyaclash.R
 import com.autumn.nyaclash.core.NativeBridge
 import com.autumn.nyaclash.core.TunInterface
 import com.autumn.nyaclash.data.ClashApi
+import com.autumn.nyaclash.data.CoreLog
 import com.autumn.nyaclash.data.SettingsStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -92,12 +94,23 @@ class NyaVpnService : VpnService(), TunInterface {
         }
 
         try {
+            CoreLog.info(
+                "connect: profile=${ProfileStore.activeId} stack=${SettingsStore.tunStack} dns=${SettingsStore.dns}",
+            )
+
             NativeBridge.ensureInit(
                 homeDir = context.filesDir.absolutePath,
                 versionName = BuildConfig.VERSION_NAME,
                 gitVersion = "",
                 sdkVersion = Build.VERSION.SDK_INT,
             )
+
+            runCatching {
+                val dns = deviceDnsServers()
+                if (dns.isNotEmpty()) {
+                    NativeBridge.nativeUpdateSystemDns(dns)
+                }
+            }
 
             val runtime = RuntimeConfig.prepare(context).getOrElse { error ->
                 fail("配置生成失败: ${error.message}")
@@ -141,7 +154,7 @@ class NyaVpnService : VpnService(), TunInterface {
                 return
             }
 
-            val rc = NativeBridge.nativeStartTun(
+            val startError = NativeBridge.nativeStartTun(
                 fd = pfd.detachFd(),
                 stack = SettingsStore.tunStack,
                 gateway = "$TUN_GATEWAY/$TUN_GATEWAY_PREFIX,$TUN_GATEWAY6/$TUN_GATEWAY6_PREFIX",
@@ -149,9 +162,9 @@ class NyaVpnService : VpnService(), TunInterface {
                 dns = "$dnsV4,$TUN_DNS6",
                 callback = this,
             )
-            if (rc != 0) {
+            if (startError != null) {
                 pfd.close()
-                fail("启动 TUN 失败 (rc=$rc)")
+                fail("启动 TUN 失败: $startError")
                 return
             }
 
@@ -175,10 +188,19 @@ class NyaVpnService : VpnService(), TunInterface {
     }
 
     private fun fail(message: String) {
+        CoreLog.error(message)
         TunnelState.running = false
         TunnelState.status = message
         runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
         stopSelf()
+    }
+
+    /** The active network's DNS servers, so `nameserver: system` keeps working. */
+    private fun deviceDnsServers(): String {
+        val manager = getSystemService(ConnectivityManager::class.java) ?: return ""
+        val network = manager.activeNetwork ?: return ""
+        val properties = manager.getLinkProperties(network) ?: return ""
+        return properties.dnsServers.mapNotNull { it.hostAddress }.joinToString(",")
     }
 
     override fun markSocket(fd: Int) {

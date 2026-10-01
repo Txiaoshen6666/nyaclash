@@ -12,12 +12,18 @@ import (
 
 	"github.com/metacubex/mihomo/component/dialer"
 	"github.com/metacubex/mihomo/constant"
+	"github.com/metacubex/mihomo/hub/route"
 	"github.com/metacubex/mihomo/log"
 )
 
 // initDelegate configures mihomo's global hooks for the Android environment.
 func initDelegate(home, versionName, gitVersion string, platformVersion int) {
 	constant.SetHomeDir(home)
+
+	// The `cmfa` build tag turns on embed mode, which removes PATCH /configs
+	// (used by the UI to switch rule/global/direct). We run our own embedded
+	// controller, so re-enable the full REST API.
+	route.SetEmbedMode(false)
 
 	versions := strings.Split(gitVersion, "_")
 	switch {

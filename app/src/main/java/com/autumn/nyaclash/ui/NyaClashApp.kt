@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.autumn.nyaclash.service.TunnelState
 import com.autumn.nyaclash.ui.dashboard.DashboardScreen
+import com.autumn.nyaclash.ui.logs.LogsScreen
 import com.autumn.nyaclash.ui.nodes.NodesScreen
 import com.autumn.nyaclash.ui.settings.SettingsScreen
 import com.autumn.nyaclash.ui.subscriptions.SubscriptionsScreen
@@ -34,6 +36,7 @@ private enum class Tab(val label: String) {
     Dashboard("仪表板"),
     Nodes("节点"),
     Subscriptions("订阅"),
+    Logs("日志"),
     Settings("设置"),
 }
 
@@ -41,6 +44,7 @@ private fun iconOf(tab: Tab): ImageVector = when (tab) {
     Tab.Dashboard -> Icons.Filled.Home
     Tab.Nodes -> NyaNodesIcon
     Tab.Subscriptions -> Icons.AutoMirrored.Filled.List
+    Tab.Logs -> Icons.Filled.Info
     Tab.Settings -> Icons.Filled.Settings
 }
 
@@ -52,6 +56,7 @@ fun NyaClashApp() {
             add(Tab.Dashboard)
             if (TunnelState.running) add(Tab.Nodes)
             add(Tab.Subscriptions)
+            add(Tab.Logs)
             add(Tab.Settings)
         }
     }
@@ -85,6 +90,7 @@ fun NyaClashApp() {
                 Tab.Dashboard -> DashboardScreen()
                 Tab.Nodes -> NodesScreen()
                 Tab.Subscriptions -> SubscriptionsScreen()
+                Tab.Logs -> LogsScreen()
                 Tab.Settings -> SettingsScreen()
             }
         }

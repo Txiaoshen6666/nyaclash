@@ -67,8 +67,11 @@ jobs:
 
           cd core
           go mod tidy
+          # `cmfa` tag: keep sing-tun from reading /data/system/packages.xml, which
+          # is root-only. Without it, buildAndroidRules() fails on non-rooted
+          # devices and sing_tun.New() returns an error.
           CGO_ENABLED=1 GOOS=android GOARCH=arm64 CC="$CC" \
-            go build -buildmode=c-shared -tags "with_gvisor" -trimpath \
+            go build -buildmode=c-shared -tags "with_gvisor,cmfa" -trimpath \
             -ldflags "-s -w" -o "$OUT/libclash.so" .
           ls -l "$OUT"
 

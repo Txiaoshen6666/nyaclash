@@ -189,7 +189,7 @@ Java_com_autumn_nyaclash_core_NativeBridge_nativePrepareConfig(JNIEnv *env, jobj
     return result;
 }
 
-JNIEXPORT jint JNICALL
+JNIEXPORT jstring JNICALL
 Java_com_autumn_nyaclash_core_NativeBridge_nativeStartTun(JNIEnv *env, jobject thiz,
                                                           jint fd, jstring stack,
                                                           jstring gateway, jstring portal,
@@ -211,13 +211,39 @@ Java_com_autumn_nyaclash_core_NativeBridge_nativeStartTun(JNIEnv *env, jobject t
     char *p = dup_utf(env, portal);
     char *d = dup_utf(env, dns);
 
-    jint rc = coreStartTun((int) fd, s, g, p, d);
+    char *err = coreStartTun((int) fd, s, g, p, d);
 
     free(s);
     free(g);
     free(p);
     free(d);
-    return rc;
+
+    if (err == NULL) {
+        return NULL;
+    }
+    jstring result = (*env)->NewStringUTF(env, err);
+    free(err);
+    return result;
+}
+
+JNIEXPORT void JNICALL
+Java_com_autumn_nyaclash_core_NativeBridge_nativeAppLog(JNIEnv *env, jobject thiz,
+                                                        jstring level, jstring message) {
+    (void) thiz;
+    char *l = dup_utf(env, level);
+    char *m = dup_utf(env, message);
+    coreAppLog(l, m);
+    free(l);
+    free(m);
+}
+
+JNIEXPORT void JNICALL
+Java_com_autumn_nyaclash_core_NativeBridge_nativeUpdateSystemDns(JNIEnv *env, jobject thiz,
+                                                                jstring addrs) {
+    (void) thiz;
+    char *a = dup_utf(env, addrs);
+    coreUpdateSystemDns(a);
+    free(a);
 }
 
 JNIEXPORT void JNICALL

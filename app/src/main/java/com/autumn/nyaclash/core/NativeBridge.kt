@@ -74,7 +74,7 @@ object NativeBridge {
         secret: String,
     ): String?
 
-    /** Starts TUN on [fd]. Returns 0 on success, -1 on failure. */
+    /** Starts TUN on [fd]. Returns null on success, else the native error message. */
     external fun nativeStartTun(
         fd: Int,
         stack: String,
@@ -82,8 +82,14 @@ object NativeBridge {
         portal: String,
         dns: String,
         callback: TunInterface,
-    ): Int
+    ): String?
 
     /** Stops the TUN listener. */
     external fun nativeStopTun()
+
+    /** Appends a message to the core log file (`filesDir/logs/core.log`). */
+    external fun nativeAppLog(level: String, message: String)
+
+    /** Pushes the device DNS servers (comma separated) into the core. */
+    external fun nativeUpdateSystemDns(addrs: String)
 }

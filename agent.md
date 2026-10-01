@@ -235,7 +235,21 @@ JNI 的 `bridge.c` 与 Go 源码在**同一个 package 目录**，由 cgo 一起
       - 设置：外观 / 网络 / 关于
       - 说明：**不引入** navigation-compose 与 YAML 库；节点图标为自绘 ImageVector
         （避免引入体积巨大的 material-icons-extended）
-- [x] 里程碑 6：发布（签名 Secrets + `release.yml`）
+### 排错：启动 TUN 失败 rc=-1（未 root）
+
+原因：未加 `cmfa` 标签时，`sing_tun.New()` 会走 `listener/sing_tun/server_android.go`
+的 `buildAndroidRules()`，其中 `getPackageManager()` 读取 **root-only** 的
+`/data/system/packages.xml`，普通 App 读失败 → `sing_tun.New` 报错 → `rc=-1`。
+
+修复与配套：
+- 构建标签改为 `with_gvisor,cmfa`（cmfa 标签让该路径变成空操作）
+- `cmfa` 会启用 embed 模式并禁用 `PATCH /configs` → 用 `route.SetEmbedMode(false)` 恢复
+- `cmfa` 下 mihomo 不再自读系统 DNS → 连接时由 App 调 `coreUpdateSystemDns`
+- `coreStartTun` 改为返回**错误字符串**；新增 `coreAppLog` + 「日志」页（`filesDir/logs/core.log`）
+
+- [x] 里程碑 6：发布（签名 Secrets + `release.yml`）✅ **v0.1.0 已发布**
+      - Release: https://github.com/Txiaoshen6666/nyaclash/releases/tag/v0.1.0
+      - 资源：`app-release.apk`（约 84 MB，PKCS12 签名）
       - 签名 keystore：`~/nyaclash-signing/release.p12`（PKCS12，alias `nyaclash`）——**仓库外，务必备份**
       - Secrets：`KEYSTORE_BASE64` / `KEYSTORE_PASSWORD` / `KEY_ALIAS` / `KEY_PASSWORD`
       - `.github/workflows/release.yml`：推 `v*` tag 或手动 → 编签名 Release APK → 发布 GitHub Release
